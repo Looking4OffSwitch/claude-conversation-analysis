@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}404 - Page Not Found{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="error-page">
+        <div class="error-icon">404</div>
+        <h1>Page Not Found</h1>
+        <p class="error-message">
+            {% if error and error.description %}
+                {{ error.description }}
+            {% else %}
+                The page you're looking for doesn't exist or the project could not be found.
+            {% endif %}
+        </p>
+
+        <div class="error-actions">
+            <a href="{{ url_for('index') }}" class="btn btn-primary">
+                ← Back to Projects
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+    .error-page {
+        text-align: center;
+        padding: 4rem 2rem;
+        max-width: 600px;
+        margin: 2rem auto;
+    }
+
+    .error-icon {
+        font-size: 6rem;
+        font-weight: bold;
+        color: #e74c3c;
+        margin-bottom: 1rem;
+    }
+
+    .error-page h1 {
+        font-size: 2rem;
+        color: #333;
+        margin-bottom: 1rem;
+    }
+
+    .error-message {
+        font-size: 1.1rem;
+        color: #666;
+        line-height: 1.6;
+        margin-bottom: 2rem;
+    }
+
+    .error-actions {
+        margin-top: 2rem;
+    }
+
+    .btn {
+        display: inline-block;
+        padding: 0.8rem 2rem;
+        background: #10a37f;
+        color: white;
+        text-decoration: none;
+        border-radius: 6px;
+        font-weight: 500;
+        transition: background 0.2s;
+    }
+
+    .btn:hover {
+        background: #0d8f6f;
+    }
+</style>
+{% endblock %}

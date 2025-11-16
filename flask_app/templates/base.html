@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Claude Code Conversation Viewer - View and share AI-assisted coding conversations">
+    <title>{% block title %}Claude Conversation Viewer{% endblock %}</title>
+
+    <!-- Base styles (common across all themes) -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+
+    <!-- Theme-specific styles -->
+    {% set current_theme = theme|default(config.DEFAULT_THEME) %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='themes/' + current_theme + '.css') }}" id="theme-stylesheet">
+
+    <!-- Syntax highlighting (Prism.js) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+
+    {% block extra_css %}{% endblock %}
+
+    <style>
+        /* Inline critical CSS for faster initial render */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            font-size: 1.2rem;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-brand">
+                <a href="{{ url_for('index') }}" class="brand-link">
+                    🤖 Claude Conversation Viewer
+                </a>
+            </div>
+
+            <div class="navbar-controls">
+                {% block navbar_controls %}
+                <!-- Theme selector -->
+                <div class="control-group">
+                    <label for="theme-select" class="control-label">Theme:</label>
+                    <select id="theme-select" class="theme-select" onchange="changeTheme(this.value)">
+                        {% for theme_name in themes %}
+                        <option value="{{ theme_name }}" {% if theme_name == current_theme %}selected{% endif %}>
+                            {{ theme_name|title }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Sanitization toggle -->
+                <div class="control-group">
+                    <label class="control-label checkbox-label">
+                        <input type="checkbox"
+                               id="sanitize-toggle"
+                               {% if sanitize_enabled %}checked{% endif %}
+                               onchange="toggleSanitization(this.checked)">
+                        Sanitize Paths
+                    </label>
+                </div>
+                {% endblock %}
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>
+                Claude Code Conversation Viewer |
+                <a href="https://github.com/Looking4OffSwitch/claude-conversation-analysis" target="_blank">GitHub</a> |
+                Built with Flask & ❤️
+            </p>
+        </div>
+    </footer>
+
+    <!-- JavaScript Libraries -->
+    <!-- Prism.js for syntax highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markup.min.js"></script>
+
+    <!-- Application JavaScript -->
+    <script src="{{ url_for('static', filename='js/interactions.js') }}"></script>
+
+    {% block extra_js %}{% endblock %}
+
+    <script>
+        // Theme switching function
+        function changeTheme(themeName) {
+            const url = new URL(window.location);
+            url.searchParams.set('theme', themeName);
+            window.location = url.toString();
+        }
+
+        // Sanitization toggle function
+        function toggleSanitization(enabled) {
+            const url = new URL(window.location);
+            url.searchParams.set('sanitize', enabled ? 'true' : 'false');
+            window.location = url.toString();
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Page loaded with theme:', '{{ current_theme }}');
+
+            // Re-run Prism highlighting after dynamic content loads
+            if (typeof Prism !== 'undefined') {
+                Prism.highlightAll();
+            }
+        });
+    </script>
+</body>
+</html>
