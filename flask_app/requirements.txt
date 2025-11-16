@@ -1,0 +1,20 @@
+# Flask Conversation Viewer - Python Dependencies
+# Install with: pip install -r requirements.txt
+
+# Core web framework
+Flask==3.0.0
+
+# Template engine (included with Flask, but listed for clarity)
+Jinja2==3.1.2
+
+# WSGI utility library (included with Flask)
+Werkzeug==3.0.1
+
+# Optional: Production WSGI server
+# Uncomment if deploying to production
+# gunicorn==21.2.0
+
+# Optional: Additional utilities
+# Uncomment if needed for development
+# python-dotenv==1.0.0  # For environment variable management
+# Flask-Caching==2.1.0  # Advanced caching (if needed)
