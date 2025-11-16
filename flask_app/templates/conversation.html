@@ -93,208 +93,9 @@
         {% endif %}
     </main>
 </div>
+{% endblock %}
 
-{# Macro for rendering a single message #}
-{% macro render_message(msg, depth, sanitizer, config) %}
-<div class="message message-{{ msg.type }} depth-{{ depth }}"
-     data-uuid="{{ msg.uuid }}"
-     data-type="{{ msg.type }}"
-     {% if msg.is_sidechain %}data-sidechain="true"{% endif %}>
-
-    <div class="message-header">
-        <div class="message-meta">
-            {% set msg_config = config.MESSAGE_TYPE_CONFIG.get(msg.type, {}) %}
-            <span class="message-icon">{{ msg_config.get('icon', '📝') }}</span>
-            <span class="message-type-label">{{ msg_config.get('label', msg.type) }}</span>
-
-            {% if msg.is_sidechain and msg.agent_id %}
-            <span class="badge badge-agent">Agent: {{ msg.agent_id[:8] }}</span>
-            {% endif %}
-
-            {% if config.SHOW_TIMESTAMPS and msg.timestamp %}
-            <span class="message-timestamp">{{ msg.timestamp[:19] }}</span>
-            {% endif %}
-        </div>
-
-        {% if msg.children or msg_config.get('collapsible', False) %}
-        <button class="collapse-toggle" onclick="toggleCollapse(this)">
-            <span class="collapse-icon">▼</span>
-        </button>
-        {% endif %}
-    </div>
-
-    <div class="message-content">
-        {{ render_message_content(msg, sanitizer, config) }}
-    </div>
-
-    {# Render nested children #}
-    {% if msg.children %}
-    <div class="message-children">
-        {% for child in msg.children %}
-            {{ render_message(child, depth + 1, sanitizer, config) }}
-        {% endfor %}
-    </div>
-    {% endif %}
-</div>
-{% endmacro %}
-
-{# Macro for rendering message content based on type #}
-{% macro render_message_content(msg, sanitizer, config) %}
-{% set content = sanitizer.sanitize(msg.content) %}
-
-{% if msg.type == 'user' %}
-    <div class="user-message">
-        {% if content is string %}
-            {{ content|safe }}
-        {% elif content is mapping and content.type == 'tool_result' %}
-            {{ render_tool_result(content, sanitizer) }}
-        {% else %}
-            <pre>{{ content }}</pre>
-        {% endif %}
-    </div>
-
-{% elif msg.type == 'assistant' %}
-    <div class="assistant-message">
-        {% if content is string %}
-            <div class="assistant-text">{{ content|safe|nl2br }}</div>
-        {% else %}
-            <pre>{{ content }}</pre>
-        {% endif %}
-
-        {# Check for tool uses in raw_data #}
-        {% if msg.raw_data.message and msg.raw_data.message.content %}
-            {% for item in msg.raw_data.message.content %}
-                {% if item.type == 'tool_use' %}
-                    {{ render_tool_use(item, sanitizer, config) }}
-                {% endif %}
-            {% endfor %}
-        {% endif %}
-    </div>
-
-{% elif msg.type == 'system' %}
-    <div class="system-message">
-        {% if content is string %}
-            {{ content }}
-        {% else %}
-            <pre>{{ content }}</pre>
-        {% endif %}
-    </div>
-
-{% elif msg.type == 'file-history-snapshot' %}
-    <div class="snapshot-message">
-        <details class="collapsible-details">
-            <summary>File History Snapshot</summary>
-            <pre class="json-content">{{ content|tojson(indent=2) }}</pre>
-        </details>
-    </div>
-
-{% else %}
-    {# Generic message rendering #}
-    <div class="generic-message">
-        {% if content is string %}
-            {{ content }}
-        {% else %}
-            <pre class="json-content">{{ content|tojson(indent=2) }}</pre>
-        {% endif %}
-    </div>
-{% endif %}
-
-{# Display metadata if enabled #}
-{% if config.SHOW_METADATA and msg.metadata %}
-<details class="message-metadata">
-    <summary>Metadata</summary>
-    <dl class="metadata-list">
-        {% for key, value in msg.metadata.items() %}
-        <dt>{{ key }}:</dt>
-        <dd>{{ sanitizer.sanitize(value) }}</dd>
-        {% endfor %}
-    </dl>
-</details>
-{% endif %}
-{% endmacro %}
-
-{# Macro for rendering tool use #}
-{% macro render_tool_use(tool, sanitizer, config) %}
-<div class="tool-use">
-    <div class="tool-header">
-        <span class="tool-icon">{{ config.TOOL_DISPLAY_NAMES.get(tool.name, '🔧 ' + tool.name) }}</span>
-        <code class="tool-id">{{ tool.id }}</code>
-    </div>
-
-    <details class="tool-details" open>
-        <summary>Input Parameters</summary>
-        <div class="tool-input">
-            {% if tool.input %}
-                {% for key, value in tool.input.items() %}
-                <div class="param-item">
-                    <span class="param-name">{{ key }}:</span>
-                    {% if value is string and (value|length > 100 or '\n' in value) %}
-                        <pre class="language-{{ get_language_from_param(key) }}"><code>{{ sanitizer.sanitize(value) }}</code></pre>
-                    {% else %}
-                        <code>{{ sanitizer.sanitize(value) }}</code>
-                    {% endif %}
-                </div>
-                {% endfor %}
-            {% endif %}
-        </div>
-    </details>
-</div>
-{% endmacro %}
-
-{# Macro for rendering tool result #}
-{% macro render_tool_result(result, sanitizer) %}
-<div class="tool-result">
-    <div class="result-header">
-        {% if result.is_error %}
-        <span class="result-status error">❌ Error</span>
-        {% else %}
-        <span class="result-status success">✓ Success</span>
-        {% endif %}
-        <code class="tool-use-id">Tool: {{ result.tool_use_id }}</code>
-    </div>
-
-    <details class="result-details">
-        <summary>View Result</summary>
-        <div class="result-content">
-            {% if result.content is string %}
-                {% set lines = result.content.split('\n') %}
-                {% if lines|length > 50 %}
-                    <pre class="result-output"><code>{{ sanitizer.sanitize('\n'.join(lines[:50])) }}
-
-... ({{ lines|length - 50 }} more lines, expand to see all)</code></pre>
-                    <details>
-                        <summary>Show All ({{ lines|length }} lines)</summary>
-                        <pre class="result-output"><code>{{ sanitizer.sanitize(result.content) }}</code></pre>
-                    </details>
-                {% else %}
-                    <pre class="result-output"><code>{{ sanitizer.sanitize(result.content) }}</code></pre>
-                {% endif %}
-            {% else %}
-                <pre class="result-output"><code>{{ sanitizer.sanitize(result.content|string) }}</code></pre>
-            {% endif %}
-        </div>
-    </details>
-</div>
-{% endmacro %}
-
-{# Helper function to guess language from parameter name #}
-{% macro get_language_from_param(param_name) %}
-{%- if 'file_path' in param_name or 'path' in param_name -%}
-text
-{%- elif 'content' in param_name or 'code' in param_name -%}
-python
-{%- elif 'command' in param_name -%}
-bash
-{%- else -%}
-text
-{%- endif -%}
-{% endmacro %}
-
-{# Custom filter for converting newlines to <br> #}
-{% macro nl2br(text) %}
-{{ text|replace('\n', '<br>')|safe }}
-{% endmacro %}
-
+{% block extra_css %}
 <style>
 /* Conversation layout */
 .conversation-container {
@@ -699,3 +500,201 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 {% endblock %}
+
+{# ===== JINJA2 MACROS FOR MESSAGE RENDERING ===== #}
+
+{# Macro for rendering a single message #}
+{% macro render_message(msg, depth, sanitizer, config) %}
+<div class="message message-{{ msg.type }} depth-{{ depth }}"
+     data-uuid="{{ msg.uuid }}"
+     data-type="{{ msg.type }}"
+     {% if msg.is_sidechain %}data-sidechain="true"{% endif %}>
+
+    <div class="message-header">
+        <div class="message-meta">
+            {% set msg_config = config.MESSAGE_TYPE_CONFIG.get(msg.type, {}) %}
+            <span class="message-icon">{{ msg_config.get('icon', '📝') }}</span>
+            <span class="message-type-label">{{ msg_config.get('label', msg.type) }}</span>
+
+            {% if msg.is_sidechain and msg.agent_id %}
+            <span class="badge badge-agent">Agent: {{ msg.agent_id[:8] }}</span>
+            {% endif %}
+
+            {% if config.SHOW_TIMESTAMPS and msg.timestamp %}
+            <span class="message-timestamp">{{ msg.timestamp[:19] }}</span>
+            {% endif %}
+        </div>
+
+        {% if msg.children or msg_config.get('collapsible', False) %}
+        <button class="collapse-toggle" onclick="toggleCollapse(this)">
+            <span class="collapse-icon">▼</span>
+        </button>
+        {% endif %}
+    </div>
+
+    <div class="message-content">
+        {{ render_message_content(msg, sanitizer, config) }}
+    </div>
+
+    {# Render nested children #}
+    {% if msg.children %}
+    <div class="message-children">
+        {% for child in msg.children %}
+            {{ render_message(child, depth + 1, sanitizer, config) }}
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+{% endmacro %}
+
+{# Macro for rendering message content based on type #}
+{% macro render_message_content(msg, sanitizer, config) %}
+{% set content = sanitizer.sanitize(msg.content) %}
+
+{% if msg.type == 'user' %}
+    <div class="user-message">
+        {% if content is string %}
+            {{ content|safe }}
+        {% elif content is mapping and content.type == 'tool_result' %}
+            {{ render_tool_result(content, sanitizer) }}
+        {% else %}
+            <pre>{{ content }}</pre>
+        {% endif %}
+    </div>
+
+{% elif msg.type == 'assistant' %}
+    <div class="assistant-message">
+        {% if content is string %}
+            <div class="assistant-text">{{ content|replace('\n', '<br>')|safe }}</div>
+        {% else %}
+            <pre>{{ content }}</pre>
+        {% endif %}
+
+        {# Check for tool uses in raw_data #}
+        {% if msg.raw_data.message and msg.raw_data.message.content %}
+            {% for item in msg.raw_data.message.content %}
+                {% if item.type == 'tool_use' %}
+                    {{ render_tool_use(item, sanitizer, config) }}
+                {% endif %}
+            {% endfor %}
+        {% endif %}
+    </div>
+
+{% elif msg.type == 'system' %}
+    <div class="system-message">
+        {% if content is string %}
+            {{ content }}
+        {% else %}
+            <pre>{{ content }}</pre>
+        {% endif %}
+    </div>
+
+{% elif msg.type == 'file-history-snapshot' %}
+    <div class="snapshot-message">
+        <details class="collapsible-details">
+            <summary>File History Snapshot</summary>
+            <pre class="json-content">{{ content|tojson(indent=2) }}</pre>
+        </details>
+    </div>
+
+{% else %}
+    {# Generic message rendering #}
+    <div class="generic-message">
+        {% if content is string %}
+            {{ content }}
+        {% else %}
+            <pre class="json-content">{{ content|tojson(indent=2) }}</pre>
+        {% endif %}
+    </div>
+{% endif %}
+
+{# Display metadata if enabled #}
+{% if config.SHOW_METADATA and msg.metadata %}
+<details class="message-metadata">
+    <summary>Metadata</summary>
+    <dl class="metadata-list">
+        {% for key, value in msg.metadata.items() %}
+        <dt>{{ key }}:</dt>
+        <dd>{{ sanitizer.sanitize(value) }}</dd>
+        {% endfor %}
+    </dl>
+</details>
+{% endif %}
+{% endmacro %}
+
+{# Macro for rendering tool use #}
+{% macro render_tool_use(tool, sanitizer, config) %}
+<div class="tool-use">
+    <div class="tool-header">
+        <span class="tool-icon">{{ config.TOOL_DISPLAY_NAMES.get(tool.name, '🔧 ' + tool.name) }}</span>
+        <code class="tool-id">{{ tool.id }}</code>
+    </div>
+
+    <details class="tool-details" open>
+        <summary>Input Parameters</summary>
+        <div class="tool-input">
+            {% if tool.input %}
+                {% for key, value in tool.input.items() %}
+                <div class="param-item">
+                    <span class="param-name">{{ key }}:</span>
+                    {% if value is string and (value|length > 100 or '\n' in value) %}
+                        <pre class="language-{{ get_language_from_param(key) }}"><code>{{ sanitizer.sanitize(value) }}</code></pre>
+                    {% else %}
+                        <code>{{ sanitizer.sanitize(value) }}</code>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            {% endif %}
+        </div>
+    </details>
+</div>
+{% endmacro %}
+
+{# Macro for rendering tool result #}
+{% macro render_tool_result(result, sanitizer) %}
+<div class="tool-result">
+    <div class="result-header">
+        {% if result.is_error %}
+        <span class="result-status error">❌ Error</span>
+        {% else %}
+        <span class="result-status success">✓ Success</span>
+        {% endif %}
+        <code class="tool-use-id">Tool: {{ result.tool_use_id }}</code>
+    </div>
+
+    <details class="result-details">
+        <summary>View Result</summary>
+        <div class="result-content">
+            {% if result.content is string %}
+                {% set lines = result.content.split('\n') %}
+                {% if lines|length > 50 %}
+                    <pre class="result-output"><code>{{ sanitizer.sanitize('\n'.join(lines[:50])) }}
+
+... ({{ lines|length - 50 }} more lines, expand to see all)</code></pre>
+                    <details>
+                        <summary>Show All ({{ lines|length }} lines)</summary>
+                        <pre class="result-output"><code>{{ sanitizer.sanitize(result.content) }}</code></pre>
+                    </details>
+                {% else %}
+                    <pre class="result-output"><code>{{ sanitizer.sanitize(result.content) }}</code></pre>
+                {% endif %}
+            {% else %}
+                <pre class="result-output"><code>{{ sanitizer.sanitize(result.content|string) }}</code></pre>
+            {% endif %}
+        </div>
+    </details>
+</div>
+{% endmacro %}
+
+{# Helper function to guess language from parameter name #}
+{% macro get_language_from_param(param_name) %}
+{%- if 'file_path' in param_name or 'path' in param_name -%}
+text
+{%- elif 'content' in param_name or 'code' in param_name -%}
+python
+{%- elif 'command' in param_name -%}
+bash
+{%- else -%}
+text
+{%- endif -%}
+{% endmacro %}

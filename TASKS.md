@@ -1,5 +1,14 @@
 # Flask Conversation Viewer - Remaining Tasks
 
+## Current Issues / Bugs
+
+### High Priority
+- **Tree Builder Circular References**: The tree builder (`flask_app/utils/tree_builder.py`) is creating circular references in the message tree
+  - This causes infinite recursion when the `render_message` macro tries to render children
+  - Affects large conversations (943+ messages)
+  - Small conversations (5-10 messages) render correctly
+  - Need to investigate tree building logic and add circular reference detection
+
 ## Phase 1: Core HTML Templates
 
 ### Base Template & Layout

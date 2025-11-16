@@ -91,3 +91,4 @@ When reviewing or modifying code (per `/reed-review` command):
 - Write readable code with clear comments
 - Remove dead code and unused files
 - DO NOT BREAK EXISTING FUNCTIONALITY
+- Do NOT commit changes unless I specifically tell you to.
