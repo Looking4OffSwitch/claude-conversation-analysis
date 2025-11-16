@@ -286,6 +286,7 @@ powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
 
 ```bash
 # Install all dependencies (Flask and dev tools like Gunicorn)
+# This automatically creates a .venv virtual environment if it doesn't exist
 uv sync
 
 # Or install only core dependencies (Flask only, without dev tools)
