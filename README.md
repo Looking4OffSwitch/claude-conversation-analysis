@@ -16,10 +16,14 @@ This repository contains:
 To analyze the conversation data and generate documentation:
 
 ```bash
-# Activate the virtual environment
-source .venv/bin/activate
+# Install dependencies (if not already installed)
+uv sync
 
-# Run the analysis
+# Run the analysis using uv
+uv run python tools/analyze_all.py
+
+# Or activate the virtual environment and run directly
+source .venv/bin/activate
 python tools/analyze_all.py
 ```
 
@@ -48,7 +52,8 @@ open research/history/README.md
 ```
 claude_conversation/
 ├── .gitignore                    # Git ignore rules
-├── .venv/                        # Python virtual environment
+├── .venv/                        # Python virtual environment (managed by uv)
+├── pyproject.toml                # Project dependencies (uv configuration)
 ├── CLAUDE.md                     # Instructions for Claude Code
 ├── README.md                     # This file
 ├── TASKS.md                      # Development task tracking
@@ -72,7 +77,6 @@ claude_conversation/
 ├── flask_app/                    # Web viewer application
 │   ├── app.py                    # Main Flask application
 │   ├── config.py                 # Configuration settings
-│   ├── requirements.txt          # Python dependencies
 │   ├── utils/                    # Utility modules
 │   │   ├── __init__.py
 │   │   ├── conversation_parser.py  # Parse JSONL files
@@ -255,25 +259,42 @@ The Flask web application provides a beautiful, interactive interface for viewin
 #### Prerequisites
 
 - Python 3.8 or higher
-- pip (Python package manager)
+- [uv](https://github.com/astral-sh/uv) - Fast Python package manager
+
+#### Install uv (if not already installed)
+
+```bash
+# macOS/Linux
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Windows
+powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
+
+# Or via pip
+pip install uv
+```
 
 #### Install Dependencies
 
 ```bash
-# Navigate to the flask_app directory
-cd flask_app
+# Navigate to the project root
+cd /path/to/claude_conversation
 
-# Install required Python packages
-pip install flask
+# Install all dependencies (Flask and optional dev tools)
+uv sync
 
-# Or use the requirements file (if created)
-pip install -r requirements.txt
+# Or install only core dependencies (Flask only)
+uv pip install -e .
 ```
 
 #### Required Packages
 
 - **Flask** - Web framework
 - **Jinja2** - Template engine (included with Flask)
+
+#### Optional Dependencies
+
+- **Gunicorn** - Production WSGI server (install with `uv sync` or `uv pip install gunicorn`)
 
 ### Configuration
 
@@ -357,8 +378,8 @@ python -m flask_app.app
 
 **Method 3: Production Server (Gunicorn)**
 ```bash
-# Install gunicorn
-pip install gunicorn
+# Install gunicorn (if not already installed via uv sync)
+uv pip install gunicorn
 
 # Run with 4 worker processes
 gunicorn -w 4 -b 127.0.0.1:5000 flask_app.app:app
@@ -545,31 +566,33 @@ Create new themes by adding CSS files to `flask_app/static/themes/`:
 
 ```
 flask_app/
-├── app.py                    # Main Flask application
-├── config.py                 # Configuration settings
-├── utils/                    # Utility modules
+├── app.py                      # Main Flask application
+├── config.py                   # Configuration settings
+├── utils/                      # Utility modules
 │   ├── __init__.py
 │   ├── conversation_parser.py  # Parse JSONL files
 │   ├── tree_builder.py         # Build message hierarchy
 │   ├── cache_manager.py        # Performance caching
 │   └── sanitizer.py            # Path sanitization
-├── templates/                # Jinja2 templates
-│   ├── base.html             # Base layout
-│   ├── index.html            # Project selection
-│   ├── conversation.html     # Main viewer
-│   ├── export.html           # Standalone export
-│   ├── 404.html              # Not found error
-│   └── 500.html              # Server error
-└── static/                   # Static assets
+├── templates/                  # Jinja2 templates
+│   ├── base.html               # Base layout
+│   ├── index.html              # Project selection
+│   ├── conversation.html       # Main viewer
+│   ├── export.html             # Standalone export
+│   ├── 404.html                # Not found error
+│   └── 500.html                # Server error
+└── static/                     # Static assets
     ├── css/
-    │   └── base.css          # Common styles
+    │   └── base.css            # Common styles
     ├── themes/
-    │   ├── chatgpt.css       # ChatGPT theme
-    │   ├── github.css        # GitHub theme (TODO)
-    │   ├── slack.css         # Slack theme (TODO)
-    │   └── minimal.css       # Minimal theme (TODO)
+    │   ├── chatgpt.css         # ChatGPT theme
+    │   ├── github.css          # GitHub theme (TODO)
+    │   ├── slack.css           # Slack theme (TODO)
+    │   └── minimal.css         # Minimal theme (TODO)
     └── js/
-        └── interactions.js   # Core JavaScript
+        └── interactions.js     # Core JavaScript
+
+Note: Dependencies are managed via pyproject.toml in the project root.
 ```
 
 ## Contributing

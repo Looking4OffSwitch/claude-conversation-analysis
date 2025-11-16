@@ -1,0 +1,23 @@
+[project]
+name = "claude-conversation-analysis"
+version = "0.1.0"
+description = "Analysis tools and web viewer for Claude Code conversation data"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "flask>=3.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "gunicorn>=21.2.0",  # Production WSGI server
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv]
+dev-dependencies = [
+    "gunicorn>=21.2.0",
+]
