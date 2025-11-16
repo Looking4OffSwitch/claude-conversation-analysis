@@ -260,8 +260,19 @@ The Flask web application provides a beautiful, interactive interface for viewin
 
 - Python 3.8 or higher
 - [uv](https://github.com/astral-sh/uv) - Fast Python package manager
+- git
 
-#### Install uv (if not already installed)
+#### Step 1: Clone the Repository
+
+```bash
+# Clone the repository
+git clone https://github.com/Looking4OffSwitch/claude-conversation-analysis.git
+
+# Navigate to the project directory
+cd claude-conversation-analysis
+```
+
+#### Step 2: Install uv (if not already installed)
 
 ```bash
 # macOS/Linux
@@ -274,12 +285,9 @@ powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
 pip install uv
 ```
 
-#### Install Dependencies
+#### Step 3: Install Dependencies
 
 ```bash
-# Navigate to the project root
-cd /path/to/claude_conversation
-
 # Install all dependencies (Flask and dev tools like Gunicorn)
 uv sync
 
@@ -345,10 +353,7 @@ PORT = 5000
 #### Basic Usage
 
 ```bash
-# Navigate to the project root
-cd /path/to/claude_conversation
-
-# Start the Flask development server
+# From the project root (claude-conversation-analysis)
 python flask_app/app.py
 ```
 
