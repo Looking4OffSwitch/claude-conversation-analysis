@@ -7,14 +7,24 @@ from their Claude Code projects.
 """
 
 import sys
+import importlib.util
 from pathlib import Path
 from datetime import datetime
 from flask import Flask, render_template, request, jsonify, send_file, abort
 
-# Add parent directory to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent / "tools"))
+# Get the absolute path to flask_app directory
+FLASK_APP_DIR = Path(__file__).parent
+PROJECT_ROOT = FLASK_APP_DIR.parent
 
-import config
+# Import flask_app config directly to avoid conflict with tools/config.py
+config_path = FLASK_APP_DIR / "config.py"
+spec = importlib.util.spec_from_file_location("flask_config", config_path)
+config = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(config)
+
+# Add tools directory to path for other imports
+sys.path.insert(0, str(PROJECT_ROOT / "tools"))
+
 from utils import (
     ConversationParser,
     MessageTreeBuilder,

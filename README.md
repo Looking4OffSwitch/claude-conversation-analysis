@@ -280,11 +280,11 @@ pip install uv
 # Navigate to the project root
 cd /path/to/claude_conversation
 
-# Install all dependencies (Flask and optional dev tools)
+# Install all dependencies (Flask and dev tools like Gunicorn)
 uv sync
 
-# Or install only core dependencies (Flask only)
-uv pip install -e .
+# Or install only core dependencies (Flask only, without dev tools)
+uv sync --no-dev
 ```
 
 #### Required Packages

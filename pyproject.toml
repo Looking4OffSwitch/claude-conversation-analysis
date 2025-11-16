@@ -8,16 +8,7 @@ dependencies = [
     "flask>=3.0.0",
 ]
 
-[project.optional-dependencies]
+[dependency-groups]
 dev = [
-    "gunicorn>=21.2.0",  # Production WSGI server
-]
-
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
-[tool.uv]
-dev-dependencies = [
     "gunicorn>=21.2.0",
 ]
