@@ -11,7 +11,18 @@ This repository contains:
 
 ## Quick Start
 
-### Running the Analysis
+### Flask Web Viewer
+
+```bash
+# Install dependencies and start the web viewer
+./start.sh
+```
+
+Then open `http://127.0.0.1:5000` in your browser.
+
+See [SETUP.md](SETUP.md) for detailed setup instructions.
+
+### Running the Analysis Tools
 
 To analyze the conversation data and generate documentation:
 
@@ -54,6 +65,7 @@ claude_conversation/
 ├── .gitignore                    # Git ignore rules
 ├── .venv/                        # Python virtual environment (managed by uv)
 ├── pyproject.toml                # Project dependencies (uv configuration)
+├── start.sh                      # Quick start script for Flask web viewer
 ├── CLAUDE.md                     # Instructions for Claude Code
 ├── README.md                     # This file
 ├── SETUP.md                      # Flask web viewer setup guide

@@ -107,7 +107,18 @@ PORT = 5000
 
 ## Starting the Web Server
 
-### Basic Usage
+### Quick Start
+
+```bash
+# From the project root (claude-conversation-analysis)
+./start.sh
+```
+
+The `start.sh` script will:
+- Check if dependencies are installed (runs `uv sync` if needed)
+- Start the Flask development server on `http://127.0.0.1:5000`
+
+### Manual Start
 
 ```bash
 # From the project root (claude-conversation-analysis)
