@@ -6,12 +6,16 @@ This module provides sanitization functionality that can be toggled on/off.
 
 import re
 from typing import Any, Union
-import sys
+import importlib.util
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
+# Import flask_app config directly to avoid conflict with tools/config.py
+config_path = Path(__file__).parent.parent / "config.py"
+spec = importlib.util.spec_from_file_location("flask_config", config_path)
+config = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(config)
 
-from config import SANITIZE_PATTERNS
+SANITIZE_PATTERNS = config.SANITIZE_PATTERNS
 
 
 class DataSanitizer:
@@ -51,6 +55,22 @@ class DataSanitizer:
             return data
 
         return self._sanitize_recursive(data)
+
+    def sanitize_text(self, text: str) -> str:
+        """
+        Sanitize a text string if enabled, otherwise return as-is.
+        Alias for sanitize() but specifically for text strings.
+
+        Args:
+            text: Text string to potentially sanitize.
+
+        Returns:
+            str: Sanitized or original text.
+        """
+        if not self.enabled:
+            return text
+
+        return self._sanitize_string(text)
 
     def _sanitize_recursive(self, data: Any) -> Any:
         """
