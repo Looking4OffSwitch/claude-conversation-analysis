@@ -74,3 +74,10 @@ Files range from 1755346724.4572477 to 1755346724.8727853. These configuration f
   "content": "---\nname: date-checker\ndescription: Use proactively to determine and output today's date including the current year, month and day. Checks if content is already in context before returning.\ntools: Read, Grep, Glob\ncolor: pink\n---\n\nYou are a specialized date determination agent for Agent OS workflows. Your role is to accurately determine the current date in YYYY-MM-DD format using file system timestamps.\n\n## Core Responsibilities\n\n1. **Context Check First**: Determine if the current date is alrea"
 }
 ```
+
+## Relationships to Other Components
+
+**No significant relationships found** with other components. This component operates independently.
+
+*Analysis checked for: shared session IDs, conversation IDs, agent IDs, message UUIDs, project paths, and temporal correlations.*
+

@@ -81,3 +81,27 @@ Files range from 1759929292.976599 to 1763297533.761865. This folder contains dy
   "size_bytes": 102710
 }
 ```
+
+## Relationships to Other Components
+
+This component has **1 relationships** with other components:
+
+### .claude
+
+**Relationship Type**: ID Sharing (strength: 7.6%)
+
+- **Shared Project Paths**: 11
+
+
+**Sample Shared Projects**:
+
+- /Users/Reed/dev/firefox-tab-group-sync-extension
+- /Users/Reed/dev/nanochat-curriculum
+- /Users/Reed/dev/neural-compression-poc
+
+### Relationship Summary
+
+- **Agent IDs tracked**: 80
+- **Message UUIDs tracked**: 135
+- **Project paths tracked**: 20
+

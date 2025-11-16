@@ -79,3 +79,10 @@ Files range from 1760872798.252308 to 1763218943.456943. This folder contains dy
   "size_bytes": 11544
 }
 ```
+
+## Relationships to Other Components
+
+**No significant relationships found** with other components. This component operates independently.
+
+*Analysis checked for: shared session IDs, conversation IDs, agent IDs, message UUIDs, project paths, and temporal correlations.*
+

@@ -76,3 +76,10 @@ JSONL files grow over time as new entries are appended. Each entry represents a 
   "project": "/Users/<USER>/dev/<PROJECT>"
 }
 ```
+
+## Relationships to Other Components
+
+**No significant relationships found** with other components. This component operates independently.
+
+*Analysis checked for: shared session IDs, conversation IDs, agent IDs, message UUIDs, project paths, and temporal correlations.*
+

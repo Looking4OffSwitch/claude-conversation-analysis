@@ -74,3 +74,10 @@ Files range from 1755346724.0504696 to 1755523356.8996656. These configuration f
   "content": "# Create Spec\n\nCreate a detailed spec for a new feature with technical specifications and task breakdown\n\nRefer to the instructions located in @~/.agent-os/instructions/core/create-spec.md\n"
 }
 ```
+
+## Relationships to Other Components
+
+**No significant relationships found** with other components. This component operates independently.
+
+*Analysis checked for: shared session IDs, conversation IDs, agent IDs, message UUIDs, project paths, and temporal correlations.*
+

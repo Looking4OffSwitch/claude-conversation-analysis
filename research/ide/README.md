@@ -30,3 +30,10 @@ Files range from 1763295762.209149 to 1763295762.209149. This folder contains dy
 - File count grows over time with usage
 
 *Error getting examples: sample_count must be at least 2*
+
+## Relationships to Other Components
+
+**No significant relationships found** with other components. This component operates independently.
+
+*Analysis checked for: shared session IDs, conversation IDs, agent IDs, message UUIDs, project paths, and temporal correlations.*
+

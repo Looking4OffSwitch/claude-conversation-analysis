@@ -25,3 +25,10 @@ Folder containing 0 JSONL files. Each file contains conversation data or state i
 No JSONL files found.
 
 *Error analyzing temporal evolution: items cannot be empty*
+
+## Relationships to Other Components
+
+**No significant relationships found** with other components. This component operates independently.
+
+*Analysis checked for: shared session IDs, conversation IDs, agent IDs, message UUIDs, project paths, and temporal correlations.*
+
