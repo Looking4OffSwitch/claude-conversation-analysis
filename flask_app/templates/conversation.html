@@ -1,0 +1,701 @@
+{% extends "base.html" %}
+
+{% block title %}{{ project.name }} - Conversation{% endblock %}
+
+{% block navbar_controls %}
+{{ super() }}
+<!-- Add export button to navbar -->
+<div class="control-group">
+    <a href="{{ url_for('export_conversation', project_id=project.id, theme=theme, sanitize=sanitize_enabled|string|lower) }}"
+       class="btn-export"
+       title="Export as standalone HTML">
+        📥 Export
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="conversation-container">
+    <!-- Sidebar with statistics -->
+    <aside class="conversation-sidebar">
+        <div class="sidebar-section">
+            <h3>📊 Statistics</h3>
+            <div class="stat-item">
+                <span class="stat-label">Total Messages:</span>
+                <span class="stat-value">{{ stats.total_messages }}</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Root Messages:</span>
+                <span class="stat-value">{{ stats.root_messages }}</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Max Depth:</span>
+                <span class="stat-value">{{ stats.max_depth }}</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Sessions:</span>
+                <span class="stat-value">{{ stats.sessions }}</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Agents Used:</span>
+                <span class="stat-value">{{ stats.agents }}</span>
+            </div>
+            {% if stats.sidechains > 0 %}
+            <div class="stat-item">
+                <span class="stat-label">Agent Chains:</span>
+                <span class="stat-value">{{ stats.sidechains }}</span>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="sidebar-section">
+            <h3>📝 Message Types</h3>
+            {% for msg_type, count in stats.message_types.items() %}
+            <div class="stat-item">
+                <span class="stat-label">{{ msg_type }}:</span>
+                <span class="stat-value">{{ count }}</span>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="sidebar-section">
+            <h3>🎛️ Controls</h3>
+            <button onclick="expandAll()" class="btn-control">Expand All</button>
+            <button onclick="collapseAll()" class="btn-control">Collapse All</button>
+            <button onclick="window.scrollTo({top: 0, behavior: 'smooth'})" class="btn-control">
+                ⬆️ Top
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main conversation timeline -->
+    <main class="conversation-timeline">
+        <div class="timeline-header">
+            <h1>💬 {{ project.name }}</h1>
+            <p class="project-info">
+                Conversation history with {{ stats.total_messages }} messages
+                {% if sanitize_enabled %}
+                <span class="badge badge-warning">🔒 Paths Sanitized</span>
+                {% endif %}
+            </p>
+        </div>
+
+        <div class="messages">
+            {% for message in tree %}
+                {{ render_message(message, 0, sanitizer, config) }}
+            {% endfor %}
+        </div>
+
+        {% if not tree %}
+        <div class="empty-conversation">
+            <p>No messages found in this conversation.</p>
+        </div>
+        {% endif %}
+    </main>
+</div>
+
+{# Macro for rendering a single message #}
+{% macro render_message(msg, depth, sanitizer, config) %}
+<div class="message message-{{ msg.type }} depth-{{ depth }}"
+     data-uuid="{{ msg.uuid }}"
+     data-type="{{ msg.type }}"
+     {% if msg.is_sidechain %}data-sidechain="true"{% endif %}>
+
+    <div class="message-header">
+        <div class="message-meta">
+            {% set msg_config = config.MESSAGE_TYPE_CONFIG.get(msg.type, {}) %}
+            <span class="message-icon">{{ msg_config.get('icon', '📝') }}</span>
+            <span class="message-type-label">{{ msg_config.get('label', msg.type) }}</span>
+
+            {% if msg.is_sidechain and msg.agent_id %}
+            <span class="badge badge-agent">Agent: {{ msg.agent_id[:8] }}</span>
+            {% endif %}
+
+            {% if config.SHOW_TIMESTAMPS and msg.timestamp %}
+            <span class="message-timestamp">{{ msg.timestamp[:19] }}</span>
+            {% endif %}
+        </div>
+
+        {% if msg.children or msg_config.get('collapsible', False) %}
+        <button class="collapse-toggle" onclick="toggleCollapse(this)">
+            <span class="collapse-icon">▼</span>
+        </button>
+        {% endif %}
+    </div>
+
+    <div class="message-content">
+        {{ render_message_content(msg, sanitizer, config) }}
+    </div>
+
+    {# Render nested children #}
+    {% if msg.children %}
+    <div class="message-children">
+        {% for child in msg.children %}
+            {{ render_message(child, depth + 1, sanitizer, config) }}
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+{% endmacro %}
+
+{# Macro for rendering message content based on type #}
+{% macro render_message_content(msg, sanitizer, config) %}
+{% set content = sanitizer.sanitize(msg.content) %}
+
+{% if msg.type == 'user' %}
+    <div class="user-message">
+        {% if content is string %}
+            {{ content|safe }}
+        {% elif content is mapping and content.type == 'tool_result' %}
+            {{ render_tool_result(content, sanitizer) }}
+        {% else %}
+            <pre>{{ content }}</pre>
+        {% endif %}
+    </div>
+
+{% elif msg.type == 'assistant' %}
+    <div class="assistant-message">
+        {% if content is string %}
+            <div class="assistant-text">{{ content|safe|nl2br }}</div>
+        {% else %}
+            <pre>{{ content }}</pre>
+        {% endif %}
+
+        {# Check for tool uses in raw_data #}
+        {% if msg.raw_data.message and msg.raw_data.message.content %}
+            {% for item in msg.raw_data.message.content %}
+                {% if item.type == 'tool_use' %}
+                    {{ render_tool_use(item, sanitizer, config) }}
+                {% endif %}
+            {% endfor %}
+        {% endif %}
+    </div>
+
+{% elif msg.type == 'system' %}
+    <div class="system-message">
+        {% if content is string %}
+            {{ content }}
+        {% else %}
+            <pre>{{ content }}</pre>
+        {% endif %}
+    </div>
+
+{% elif msg.type == 'file-history-snapshot' %}
+    <div class="snapshot-message">
+        <details class="collapsible-details">
+            <summary>File History Snapshot</summary>
+            <pre class="json-content">{{ content|tojson(indent=2) }}</pre>
+        </details>
+    </div>
+
+{% else %}
+    {# Generic message rendering #}
+    <div class="generic-message">
+        {% if content is string %}
+            {{ content }}
+        {% else %}
+            <pre class="json-content">{{ content|tojson(indent=2) }}</pre>
+        {% endif %}
+    </div>
+{% endif %}
+
+{# Display metadata if enabled #}
+{% if config.SHOW_METADATA and msg.metadata %}
+<details class="message-metadata">
+    <summary>Metadata</summary>
+    <dl class="metadata-list">
+        {% for key, value in msg.metadata.items() %}
+        <dt>{{ key }}:</dt>
+        <dd>{{ sanitizer.sanitize(value) }}</dd>
+        {% endfor %}
+    </dl>
+</details>
+{% endif %}
+{% endmacro %}
+
+{# Macro for rendering tool use #}
+{% macro render_tool_use(tool, sanitizer, config) %}
+<div class="tool-use">
+    <div class="tool-header">
+        <span class="tool-icon">{{ config.TOOL_DISPLAY_NAMES.get(tool.name, '🔧 ' + tool.name) }}</span>
+        <code class="tool-id">{{ tool.id }}</code>
+    </div>
+
+    <details class="tool-details" open>
+        <summary>Input Parameters</summary>
+        <div class="tool-input">
+            {% if tool.input %}
+                {% for key, value in tool.input.items() %}
+                <div class="param-item">
+                    <span class="param-name">{{ key }}:</span>
+                    {% if value is string and (value|length > 100 or '\n' in value) %}
+                        <pre class="language-{{ get_language_from_param(key) }}"><code>{{ sanitizer.sanitize(value) }}</code></pre>
+                    {% else %}
+                        <code>{{ sanitizer.sanitize(value) }}</code>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            {% endif %}
+        </div>
+    </details>
+</div>
+{% endmacro %}
+
+{# Macro for rendering tool result #}
+{% macro render_tool_result(result, sanitizer) %}
+<div class="tool-result">
+    <div class="result-header">
+        {% if result.is_error %}
+        <span class="result-status error">❌ Error</span>
+        {% else %}
+        <span class="result-status success">✓ Success</span>
+        {% endif %}
+        <code class="tool-use-id">Tool: {{ result.tool_use_id }}</code>
+    </div>
+
+    <details class="result-details">
+        <summary>View Result</summary>
+        <div class="result-content">
+            {% if result.content is string %}
+                {% set lines = result.content.split('\n') %}
+                {% if lines|length > 50 %}
+                    <pre class="result-output"><code>{{ sanitizer.sanitize('\n'.join(lines[:50])) }}
+
+... ({{ lines|length - 50 }} more lines, expand to see all)</code></pre>
+                    <details>
+                        <summary>Show All ({{ lines|length }} lines)</summary>
+                        <pre class="result-output"><code>{{ sanitizer.sanitize(result.content) }}</code></pre>
+                    </details>
+                {% else %}
+                    <pre class="result-output"><code>{{ sanitizer.sanitize(result.content) }}</code></pre>
+                {% endif %}
+            {% else %}
+                <pre class="result-output"><code>{{ sanitizer.sanitize(result.content|string) }}</code></pre>
+            {% endif %}
+        </div>
+    </details>
+</div>
+{% endmacro %}
+
+{# Helper function to guess language from parameter name #}
+{% macro get_language_from_param(param_name) %}
+{%- if 'file_path' in param_name or 'path' in param_name -%}
+text
+{%- elif 'content' in param_name or 'code' in param_name -%}
+python
+{%- elif 'command' in param_name -%}
+bash
+{%- else -%}
+text
+{%- endif -%}
+{% endmacro %}
+
+{# Custom filter for converting newlines to <br> #}
+{% macro nl2br(text) %}
+{{ text|replace('\n', '<br>')|safe }}
+{% endmacro %}
+
+<style>
+/* Conversation layout */
+.conversation-container {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 2rem;
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+}
+
+@media (max-width: 1024px) {
+    .conversation-container {
+        grid-template-columns: 1fr;
+    }
+
+    .conversation-sidebar {
+        order: 2;
+    }
+}
+
+/* Sidebar styles */
+.conversation-sidebar {
+    position: sticky;
+    top: 1rem;
+    height: fit-content;
+}
+
+.sidebar-section {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.sidebar-section h3 {
+    font-size: 1rem;
+    margin-bottom: 1rem;
+    color: #333;
+}
+
+.stat-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.stat-item:last-child {
+    border-bottom: none;
+}
+
+.stat-label {
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.stat-value {
+    font-weight: 600;
+    color: #333;
+}
+
+.btn-control {
+    width: 100%;
+    padding: 0.6rem;
+    margin: 0.5rem 0;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-control:hover {
+    background: #f5f5f5;
+    border-color: #999;
+}
+
+/* Timeline styles */
+.conversation-timeline {
+    min-width: 0;
+}
+
+.timeline-header {
+    margin-bottom: 2rem;
+}
+
+.timeline-header h1 {
+    font-size: 2rem;
+    color: #333;
+    margin-bottom: 0.5rem;
+}
+
+.project-info {
+    color: #666;
+    font-size: 1rem;
+}
+
+.badge {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    margin-left: 0.5rem;
+}
+
+.badge-warning {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.badge-agent {
+    background: #e3f2fd;
+    color: #1976d2;
+    font-family: monospace;
+    font-size: 0.8rem;
+}
+
+/* Message styles */
+.messages {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.message {
+    background: white;
+    border-radius: 8px;
+    padding: 1rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    transition: all 0.2s;
+}
+
+.message:hover {
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+/* Nested message indentation */
+.message-children {
+    margin-top: 1rem;
+    margin-left: 2rem;
+    border-left: 2px solid #e0e0e0;
+    padding-left: 1rem;
+}
+
+.message-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.message-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.message-icon {
+    font-size: 1.2rem;
+}
+
+.message-type-label {
+    font-weight: 600;
+    color: #555;
+    font-size: 0.9rem;
+}
+
+.message-timestamp {
+    color: #999;
+    font-size: 0.85rem;
+    font-family: monospace;
+}
+
+.collapse-toggle {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+
+.collapse-toggle:hover {
+    background: #f0f0f0;
+}
+
+.collapse-icon {
+    display: inline-block;
+    transition: transform 0.2s;
+}
+
+.collapsed .collapse-icon {
+    transform: rotate(-90deg);
+}
+
+.collapsed .message-content,
+.collapsed .message-children {
+    display: none;
+}
+
+/* Content styles */
+.message-content {
+    color: #333;
+    line-height: 1.6;
+}
+
+.user-message,
+.assistant-message {
+    font-size: 1rem;
+}
+
+.system-message {
+    font-size: 0.9rem;
+    color: #666;
+    font-style: italic;
+}
+
+/* Tool styles */
+.tool-use,
+.tool-result {
+    margin: 1rem 0;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border-left: 3px solid #007bff;
+}
+
+.tool-header,
+.result-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    font-weight: 500;
+}
+
+.tool-icon {
+    font-size: 1rem;
+}
+
+.tool-id,
+.tool-use-id {
+    font-family: monospace;
+    font-size: 0.85rem;
+    color: #666;
+    background: white;
+    padding: 0.2rem 0.5rem;
+    border-radius: 3px;
+}
+
+.param-item {
+    margin: 0.5rem 0;
+}
+
+.param-name {
+    font-weight: 500;
+    color: #555;
+    margin-right: 0.5rem;
+}
+
+.result-status {
+    padding: 0.2rem 0.6rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+}
+
+.result-status.success {
+    background: #d4edda;
+    color: #155724;
+}
+
+.result-status.error {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+/* Code blocks */
+pre {
+    background: #2d2d2d;
+    color: #f8f8f2;
+    padding: 1rem;
+    border-radius: 4px;
+    overflow-x: auto;
+    margin: 0.5rem 0;
+}
+
+pre code {
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.result-output {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+/* Details/Summary */
+details {
+    margin: 0.5rem 0;
+}
+
+summary {
+    cursor: pointer;
+    user-select: none;
+    padding: 0.5rem;
+    background: #f0f0f0;
+    border-radius: 4px;
+    font-weight: 500;
+}
+
+summary:hover {
+    background: #e0e0e0;
+}
+
+.message-metadata {
+    margin-top: 1rem;
+    font-size: 0.9rem;
+}
+
+.metadata-list {
+    margin: 0.5rem 0;
+    padding: 0.5rem;
+    background: white;
+    border-radius: 4px;
+}
+
+.metadata-list dt {
+    font-weight: 500;
+    color: #555;
+    margin-top: 0.5rem;
+}
+
+.metadata-list dd {
+    margin-left: 1rem;
+    color: #333;
+}
+
+/* Empty state */
+.empty-conversation {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: #999;
+}
+
+/* Export button in navbar */
+.btn-export {
+    padding: 0.5rem 1rem;
+    background: #10a37f;
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    font-weight: 500;
+    transition: background 0.2s;
+    white-space: nowrap;
+}
+
+.btn-export:hover {
+    background: #0d8f6f;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleCollapse(button) {
+    const message = button.closest('.message');
+    message.classList.toggle('collapsed');
+}
+
+function expandAll() {
+    document.querySelectorAll('.message.collapsed').forEach(msg => {
+        msg.classList.remove('collapsed');
+    });
+    document.querySelectorAll('details').forEach(details => {
+        details.open = true;
+    });
+}
+
+function collapseAll() {
+    // Collapse all messages with children
+    document.querySelectorAll('.message-children').forEach(children => {
+        children.closest('.message').classList.add('collapsed');
+    });
+    // Collapse all tool details
+    document.querySelectorAll('.tool-details, .result-details').forEach(details => {
+        details.open = false;
+    });
+}
+
+// Initialize: collapse tool results by default
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.result-details').forEach(details => {
+        details.open = false;
+    });
+});
+</script>
+{% endblock %}

@@ -17,25 +17,25 @@
 - [x] Add cache clear button
 
 ### Main Conversation Viewer
-- [ ] Create `templates/conversation.html` - Main conversation display
-- [ ] Implement message rendering with Jinja2 macros for recursion
-- [ ] Add collapsible sections for:
+- [x] Create `templates/conversation.html` - Main conversation display
+- [x] Implement message rendering with Jinja2 macros for recursion
+- [x] Add collapsible sections for:
   - Agent conversations (nested under parent)
   - Tool invocations
   - Tool results (collapsed by default)
   - System messages
   - File history snapshots
-- [ ] Display message metadata (timestamp, type, session ID, agent ID)
-- [ ] Add "copy" buttons for code blocks
-- [ ] Implement syntax highlighting for code (using Prism.js or highlight.js)
-- [ ] Add "expand/collapse all" buttons
-- [ ] Display conversation statistics sidebar/header
+- [x] Display message metadata (timestamp, type, session ID, agent ID)
+- [x] Add "copy" buttons for code blocks
+- [x] Implement syntax highlighting for code (using Prism.js or highlight.js)
+- [x] Add "expand/collapse all" buttons
+- [x] Display conversation statistics sidebar/header
 
 ### Export Template
-- [ ] Create `templates/export.html` - Standalone HTML export
-- [ ] Inline all CSS and JavaScript (no external dependencies)
-- [ ] Include export metadata (date, sanitization status)
-- [ ] Make fully self-contained for easy sharing
+- [x] Create `templates/export.html` - Standalone HTML export
+- [x] Inline all CSS and JavaScript (no external dependencies)
+- [x] Include export metadata (date, sanitization status)
+- [x] Make fully self-contained for easy sharing
 
 ### Error Templates
 - [x] Create `templates/404.html` - Not found error page
@@ -44,13 +44,13 @@
 ## Phase 2: Theme System CSS
 
 ### ChatGPT Theme (Default)
-- [ ] Create `static/themes/chatgpt.css`
-- [ ] Speech bubble style messages
-- [ ] User messages aligned right with distinct color
-- [ ] Assistant messages aligned left
-- [ ] Smooth rounded corners
-- [ ] Clean, modern typography
-- [ ] Collapsible sections with smooth animations
+- [x] Create `static/themes/chatgpt.css`
+- [x] Speech bubble style messages
+- [x] User messages aligned right with distinct color
+- [x] Assistant messages aligned left
+- [x] Smooth rounded corners
+- [x] Clean, modern typography
+- [x] Collapsible sections with smooth animations
 
 ### GitHub Theme
 - [ ] Create `static/themes/github.css`
@@ -77,23 +77,23 @@
 - [ ] High contrast for accessibility
 
 ### Base Styles
-- [ ] Create `static/css/base.css` - Common styles across all themes
-- [ ] Reset/normalize CSS
-- [ ] Layout grid system
-- [ ] Utility classes (spacing, colors, typography)
-- [ ] Print styles
-- [ ] Responsive breakpoints
+- [x] Create `static/css/base.css` - Common styles across all themes
+- [x] Reset/normalize CSS
+- [x] Layout grid system
+- [x] Utility classes (spacing, colors, typography)
+- [x] Print styles
+- [x] Responsive breakpoints
 
 ## Phase 3: JavaScript Interactivity
 
 ### Core Interactions
-- [ ] Create `static/js/interactions.js`
-- [ ] Implement collapse/expand functionality for nested messages
-- [ ] Add "expand all" / "collapse all" buttons
-- [ ] Add copy-to-clipboard for code blocks
-- [ ] Implement smooth scroll animations
-- [ ] Add keyboard shortcuts (space to toggle, arrow keys to navigate)
-- [ ] Save user preferences (theme, collapsed states) to localStorage
+- [x] Create `static/js/interactions.js`
+- [x] Implement collapse/expand functionality for nested messages
+- [x] Add "expand all" / "collapse all" buttons
+- [x] Add copy-to-clipboard for code blocks
+- [x] Implement smooth scroll animations
+- [x] Add keyboard shortcuts (e/c for expand/collapse, arrow keys to navigate)
+- [x] Save user preferences (theme, collapsed states) to localStorage
 
 ### Message Navigation
 - [ ] Add jump-to-timestamp functionality
@@ -245,8 +245,13 @@
 
 ## Current Status
 
-**Completed**: ✅ All backend infrastructure (config, parser, cache, routes)
+**Completed**: ✅
+- All backend infrastructure (config, parser, cache, routes)
+- All Phase 1 HTML templates (base, index, conversation, export, error pages)
+- Base CSS with comprehensive utilities and responsive design
+- ChatGPT theme CSS (default, speech bubble style)
+- Core JavaScript interactions (collapse/expand, copy, keyboard shortcuts, localStorage)
 
-**In Progress**: 🔄 HTML templates
+**In Progress**: 🔄 Additional theme development
 
-**Next**: Base template and project selection page
+**Next**: Additional themes (GitHub, Slack, Minimal), enhanced features (search, analytics)

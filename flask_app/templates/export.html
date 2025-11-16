@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ project_name }} - Claude Conversation Export</title>
+
+    <style>
+        /* ===== BASE RESET & LAYOUT ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+
+        /* ===== EXPORT METADATA BANNER ===== */
+        .export-banner {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .export-banner h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .export-banner .metadata {
+            display: flex;
+            gap: 2rem;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+            font-size: 0.95rem;
+            opacity: 0.95;
+        }
+
+        .export-banner .metadata-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .export-banner .badge {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.85rem;
+        }
+
+        /* ===== CONVERSATION CONTAINER ===== */
+        .conversation-wrapper {
+            display: flex;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .conversation-main {
+            flex: 1;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+        }
+
+        .conversation-sidebar {
+            width: 300px;
+            flex-shrink: 0;
+        }
+
+        /* ===== STATISTICS SIDEBAR ===== */
+        .stats-card {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1rem;
+            position: sticky;
+            top: 1rem;
+        }
+
+        .stats-card h3 {
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+            color: #333;
+            border-bottom: 2px solid #10a37f;
+            padding-bottom: 0.5rem;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .stat-item:last-child {
+            border-bottom: none;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .stat-value {
+            font-weight: 600;
+            color: #10a37f;
+        }
+
+        .type-breakdown {
+            margin-top: 1rem;
+        }
+
+        .type-breakdown-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.4rem 0;
+            font-size: 0.85rem;
+        }
+
+        .type-icon {
+            margin-right: 0.5rem;
+        }
+
+        /* ===== MESSAGE STYLES ===== */
+        .message {
+            margin-bottom: 1.5rem;
+            border-left: 3px solid #e0e0e0;
+            padding-left: 1rem;
+            position: relative;
+        }
+
+        .message.depth-0 {
+            border-left-color: #10a37f;
+        }
+
+        .message.depth-1 {
+            margin-left: 1.5rem;
+            border-left-color: #3b82f6;
+        }
+
+        .message.depth-2 {
+            margin-left: 3rem;
+            border-left-color: #8b5cf6;
+        }
+
+        .message.depth-3 {
+            margin-left: 4.5rem;
+            border-left-color: #ec4899;
+        }
+
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+            padding: 0.5rem;
+            background: #f8f9fa;
+            border-radius: 6px;
+        }
+
+        .message-meta {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .message-icon {
+            font-size: 1.2rem;
+        }
+
+        .message-type-label {
+            font-weight: 600;
+            color: #333;
+            font-size: 0.9rem;
+        }
+
+        .badge {
+            background: #e0e7ff;
+            color: #4338ca;
+            padding: 0.2rem 0.6rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .badge-agent {
+            background: #fce7f3;
+            color: #be185d;
+        }
+
+        .badge-session {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .collapse-toggle {
+            background: none;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            padding: 0.25rem 0.5rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            font-size: 0.85rem;
+            color: #666;
+            transition: all 0.2s;
+        }
+
+        .collapse-toggle:hover {
+            background: #f3f4f6;
+            border-color: #9ca3af;
+        }
+
+        .collapse-icon {
+            transition: transform 0.2s;
+            display: inline-block;
+        }
+
+        .collapsed .collapse-icon {
+            transform: rotate(-90deg);
+        }
+
+        .message-content {
+            padding: 0.75rem;
+            background: white;
+            border-radius: 6px;
+        }
+
+        .message-text {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            color: #374151;
+            line-height: 1.7;
+        }
+
+        .message-children {
+            margin-top: 1rem;
+        }
+
+        .collapsed .message-children {
+            display: none;
+        }
+
+        /* ===== TOOL DISPLAY ===== */
+        .tool-use {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 1rem;
+            border-radius: 6px;
+            margin: 0.75rem 0;
+        }
+
+        .tool-name {
+            font-weight: 600;
+            color: #92400e;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .tool-icon {
+            font-size: 1.1rem;
+        }
+
+        .tool-details {
+            margin-top: 0.75rem;
+        }
+
+        .tool-details summary {
+            cursor: pointer;
+            font-weight: 500;
+            color: #78350f;
+            padding: 0.5rem;
+            background: rgba(251, 191, 36, 0.2);
+            border-radius: 4px;
+            user-select: none;
+        }
+
+        .tool-details summary:hover {
+            background: rgba(251, 191, 36, 0.3);
+        }
+
+        .tool-params {
+            margin-top: 0.5rem;
+            padding: 0.75rem;
+            background: white;
+            border-radius: 4px;
+        }
+
+        .tool-result {
+            background: #f0f9ff;
+            border-left: 4px solid #3b82f6;
+            padding: 1rem;
+            border-radius: 6px;
+            margin: 0.75rem 0;
+        }
+
+        .tool-result-header {
+            font-weight: 600;
+            color: #1e40af;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .tool-result-content {
+            max-height: 300px;
+            overflow-y: auto;
+            background: white;
+            padding: 0.75rem;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 0.85rem;
+        }
+
+        .tool-result-content.expanded {
+            max-height: none;
+        }
+
+        .show-more-btn {
+            margin-top: 0.5rem;
+            padding: 0.4rem 1rem;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+
+        .show-more-btn:hover {
+            background: #2563eb;
+        }
+
+        /* ===== CODE BLOCKS ===== */
+        pre[class*="language-"] {
+            background: #2d2d2d;
+            color: #ccc;
+            padding: 1rem;
+            border-radius: 6px;
+            overflow-x: auto;
+            margin: 0.75rem 0;
+            position: relative;
+        }
+
+        code[class*="language-"] {
+            font-family: 'Monaco', 'Consolas', 'Courier New', monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .copy-code-btn {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            padding: 0.4rem 0.8rem;
+            background: #4b5563;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+
+        .copy-code-btn:hover {
+            opacity: 1;
+            background: #374151;
+        }
+
+        /* ===== METADATA DETAILS ===== */
+        .metadata-details {
+            margin-top: 0.75rem;
+            font-size: 0.85rem;
+        }
+
+        .metadata-details summary {
+            cursor: pointer;
+            color: #6b7280;
+            padding: 0.4rem;
+            background: #f9fafb;
+            border-radius: 4px;
+            user-select: none;
+        }
+
+        .metadata-details summary:hover {
+            background: #f3f4f6;
+        }
+
+        .metadata-grid {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+            padding: 0.75rem;
+            background: #f9fafb;
+            border-radius: 4px;
+        }
+
+        .metadata-key {
+            font-weight: 500;
+            color: #6b7280;
+        }
+
+        .metadata-value {
+            color: #374151;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 0.85rem;
+        }
+
+        /* ===== CONTROLS ===== */
+        .conversation-controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 6px;
+        }
+
+        .control-btn {
+            padding: 0.6rem 1.2rem;
+            background: #10a37f;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+
+        .control-btn:hover {
+            background: #0d8f6f;
+        }
+
+        .control-btn.secondary {
+            background: #6e6e80;
+        }
+
+        .control-btn.secondary:hover {
+            background: #5a5a6b;
+        }
+
+        /* ===== FOOTER ===== */
+        .export-footer {
+            background: #1f2937;
+            color: #d1d5db;
+            padding: 2rem 0;
+            margin-top: 3rem;
+            text-align: center;
+        }
+
+        .export-footer a {
+            color: #10a37f;
+            text-decoration: none;
+        }
+
+        .export-footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 1024px) {
+            .conversation-wrapper {
+                flex-direction: column-reverse;
+            }
+
+            .conversation-sidebar {
+                width: 100%;
+            }
+
+            .stats-card {
+                position: static;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .message.depth-1 { margin-left: 1rem; }
+            .message.depth-2 { margin-left: 2rem; }
+            .message.depth-3 { margin-left: 3rem; }
+
+            .export-banner h1 {
+                font-size: 1.5rem;
+            }
+
+            .export-banner .metadata {
+                font-size: 0.85rem;
+                gap: 1rem;
+            }
+        }
+
+        /* ===== PRINT STYLES ===== */
+        @media print {
+            body {
+                background: white;
+            }
+
+            .export-banner {
+                background: none;
+                color: black;
+                border-bottom: 2px solid #333;
+            }
+
+            .conversation-sidebar {
+                display: none;
+            }
+
+            .conversation-main {
+                box-shadow: none;
+            }
+
+            .collapse-toggle {
+                display: none;
+            }
+
+            .message-children {
+                display: block !important;
+            }
+
+            .control-btn {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Export Metadata Banner -->
+    <div class="export-banner">
+        <div class="container">
+            <h1>{{ project_name }}</h1>
+            <p>Claude Code Conversation Export</p>
+            <div class="metadata">
+                <div class="metadata-item">
+                    <span>📅</span>
+                    <span>Exported: {{ export_date }}</span>
+                </div>
+                <div class="metadata-item">
+                    <span>💬</span>
+                    <span>{{ stats.total_messages }} messages</span>
+                </div>
+                <div class="metadata-item">
+                    <span>🔒</span>
+                    <span class="badge">{{ 'Sanitized' if sanitized else 'Original Paths' }}</span>
+                </div>
+                {% if stats.session_count > 0 %}
+                <div class="metadata-item">
+                    <span>🔗</span>
+                    <span>{{ stats.session_count }} sessions</span>
+                </div>
+                {% endif %}
+                {% if stats.agent_count > 0 %}
+                <div class="metadata-item">
+                    <span>🤖</span>
+                    <span>{{ stats.agent_count }} agents</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Conversation Container -->
+    <div class="container">
+        <div class="conversation-wrapper">
+            <!-- Main Conversation -->
+            <div class="conversation-main">
+                <div class="conversation-controls">
+                    <button class="control-btn" onclick="expandAll()">Expand All</button>
+                    <button class="control-btn secondary" onclick="collapseAll()">Collapse All</button>
+                    <button class="control-btn secondary" onclick="window.print()">Print</button>
+                </div>
+
+                <div class="conversation-timeline">
+                    {% for message in message_tree %}
+                        {{ render_message(message, 0, sanitizer, config) }}
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Statistics Sidebar -->
+            <aside class="conversation-sidebar">
+                <div class="stats-card">
+                    <h3>Conversation Statistics</h3>
+
+                    <div class="stat-item">
+                        <span class="stat-label">Total Messages</span>
+                        <span class="stat-value">{{ stats.total_messages }}</span>
+                    </div>
+
+                    {% if stats.session_count > 0 %}
+                    <div class="stat-item">
+                        <span class="stat-label">Sessions</span>
+                        <span class="stat-value">{{ stats.session_count }}</span>
+                    </div>
+                    {% endif %}
+
+                    {% if stats.agent_count > 0 %}
+                    <div class="stat-item">
+                        <span class="stat-label">Agents Used</span>
+                        <span class="stat-value">{{ stats.agent_count }}</span>
+                    </div>
+                    {% endif %}
+
+                    <div class="stat-item">
+                        <span class="stat-label">First Message</span>
+                        <span class="stat-value">{{ stats.first_message_time }}</span>
+                    </div>
+
+                    <div class="stat-item">
+                        <span class="stat-label">Last Message</span>
+                        <span class="stat-value">{{ stats.last_message_time }}</span>
+                    </div>
+
+                    {% if stats.message_types %}
+                    <div class="type-breakdown">
+                        <h4 style="font-size: 0.95rem; margin-bottom: 0.5rem; color: #666;">Message Types</h4>
+                        {% for msg_type, count in stats.message_types.items() %}
+                        <div class="type-breakdown-item">
+                            <span>
+                                <span class="type-icon">{{ config.MESSAGE_TYPE_CONFIG.get(msg_type, {}).get('icon', '📝') }}</span>
+                                {{ msg_type }}
+                            </span>
+                            <span style="font-weight: 600; color: #10a37f;">{{ count }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            </aside>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="export-footer">
+        <div class="container">
+            <p>
+                Generated by <strong>Claude Code Conversation Viewer</strong> |
+                <a href="https://github.com/Looking4OffSwitch/claude-conversation-analysis" target="_blank">GitHub</a>
+            </p>
+            <p style="margin-top: 0.5rem; font-size: 0.85rem; opacity: 0.8;">
+                This is a standalone HTML export. All styles and scripts are embedded.
+            </p>
+        </div>
+    </footer>
+
+    <!-- Embedded JavaScript -->
+    <script>
+        // Collapse/Expand functionality
+        function toggleCollapse(button) {
+            const message = button.closest('.message');
+            message.classList.toggle('collapsed');
+        }
+
+        function expandAll() {
+            document.querySelectorAll('.message.collapsed').forEach(msg => {
+                msg.classList.remove('collapsed');
+            });
+            document.querySelectorAll('details').forEach(details => {
+                details.open = true;
+            });
+        }
+
+        function collapseAll() {
+            document.querySelectorAll('.message').forEach(msg => {
+                const hasChildren = msg.querySelector('.message-children');
+                const isToolUse = msg.classList.contains('message-tool_use');
+                const isToolResult = msg.classList.contains('message-tool_result');
+
+                if (hasChildren || isToolUse || isToolResult) {
+                    msg.classList.add('collapsed');
+                }
+            });
+            document.querySelectorAll('details').forEach(details => {
+                details.open = false;
+            });
+        }
+
+        // Copy code functionality
+        function copyCode(button) {
+            const pre = button.parentElement;
+            const code = pre.querySelector('code');
+            const text = code.textContent;
+
+            navigator.clipboard.writeText(text).then(() => {
+                const originalText = button.textContent;
+                button.textContent = 'Copied!';
+                setTimeout(() => {
+                    button.textContent = originalText;
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+                button.textContent = 'Failed';
+                setTimeout(() => {
+                    button.textContent = 'Copy';
+                }, 2000);
+            });
+        }
+
+        // Show more/less for long tool results
+        function toggleShowMore(button) {
+            const content = button.previousElementSibling;
+            content.classList.toggle('expanded');
+            button.textContent = content.classList.contains('expanded') ? 'Show Less' : 'Show All';
+        }
+
+        // Add copy buttons to all code blocks
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('pre[class*="language-"]').forEach(pre => {
+                if (!pre.querySelector('.copy-code-btn')) {
+                    const button = document.createElement('button');
+                    button.className = 'copy-code-btn';
+                    button.textContent = 'Copy';
+                    button.onclick = function() { copyCode(this); };
+                    pre.style.position = 'relative';
+                    pre.appendChild(button);
+                }
+            });
+
+            // Collapse tool results by default
+            document.querySelectorAll('.message-tool_result').forEach(msg => {
+                msg.classList.add('collapsed');
+            });
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            // 'e' key to expand all
+            if (e.key === 'e' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+                if (document.activeElement.tagName !== 'INPUT' &&
+                    document.activeElement.tagName !== 'TEXTAREA') {
+                    expandAll();
+                    e.preventDefault();
+                }
+            }
+            // 'c' key to collapse all
+            if (e.key === 'c' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+                if (document.activeElement.tagName !== 'INPUT' &&
+                    document.activeElement.tagName !== 'TEXTAREA') {
+                    collapseAll();
+                    e.preventDefault();
+                }
+            }
+        });
+    </script>
+</body>
+</html>
+
+{# ===== JINJA2 MACROS FOR MESSAGE RENDERING ===== #}
+
+{% macro render_message(msg, depth, sanitizer, config) %}
+{% set msg_config = config.MESSAGE_TYPE_CONFIG.get(msg.type, {}) %}
+<div class="message message-{{ msg.type }} depth-{{ depth }}" data-uuid="{{ msg.uuid }}">
+    <div class="message-header">
+        <div class="message-meta">
+            <span class="message-icon">{{ msg_config.get('icon', '📝') }}</span>
+            <span class="message-type-label">{{ msg_config.get('label', msg.type) }}</span>
+
+            {% if msg.is_sidechain and msg.agent_id %}
+            <span class="badge badge-agent">Agent: {{ msg.agent_id[:8] }}</span>
+            {% endif %}
+
+            {% if msg.session_id and depth == 0 %}
+            <span class="badge badge-session">Session: {{ msg.session_id[:8] }}</span>
+            {% endif %}
+
+            <span style="color: #9ca3af; font-size: 0.8rem;">
+                {{ msg.timestamp }}
+            </span>
+        </div>
+
+        {% if msg.children or msg_config.get('collapsible', False) %}
+        <button class="collapse-toggle" onclick="toggleCollapse(this)">
+            <span class="collapse-icon">▼</span>
+        </button>
+        {% endif %}
+    </div>
+
+    <div class="message-content">
+        {{ render_message_content(msg, sanitizer, config) }}
+
+        {% if msg.raw_data %}
+        <details class="metadata-details">
+            <summary>Message Metadata</summary>
+            <div class="metadata-grid">
+                <span class="metadata-key">UUID:</span>
+                <span class="metadata-value">{{ msg.uuid }}</span>
+
+                {% if msg.parent_uuid %}
+                <span class="metadata-key">Parent UUID:</span>
+                <span class="metadata-value">{{ msg.parent_uuid }}</span>
+                {% endif %}
+
+                <span class="metadata-key">Timestamp (ms):</span>
+                <span class="metadata-value">{{ msg.timestamp_ms }}</span>
+
+                {% if msg.session_id %}
+                <span class="metadata-key">Session ID:</span>
+                <span class="metadata-value">{{ msg.session_id }}</span>
+                {% endif %}
+
+                {% if msg.agent_id %}
+                <span class="metadata-key">Agent ID:</span>
+                <span class="metadata-value">{{ msg.agent_id }}</span>
+                {% endif %}
+            </div>
+        </details>
+        {% endif %}
+    </div>
+
+    {% if msg.children %}
+    <div class="message-children">
+        {% for child in msg.children %}
+            {{ render_message(child, depth + 1, sanitizer, config) }}
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+{% endmacro %}
+
+{% macro render_message_content(msg, sanitizer, config) %}
+{% if msg.type == 'user' or msg.type == 'assistant' %}
+    {% if msg.content is string %}
+        <div class="message-text">{{ sanitizer.sanitize_text(msg.content) if sanitizer else msg.content }}</div>
+    {% elif msg.content is iterable %}
+        {% for block in msg.content %}
+            {% if block.type == 'text' %}
+                <div class="message-text">{{ sanitizer.sanitize_text(block.text) if sanitizer else block.text }}</div>
+            {% elif block.type == 'tool_use' %}
+                {{ render_tool_use(block, sanitizer, config) }}
+            {% endif %}
+        {% endfor %}
+    {% endif %}
+
+{% elif msg.type == 'tool_use' %}
+    {{ render_tool_use(msg.content, sanitizer, config) }}
+
+{% elif msg.type == 'tool_result' %}
+    {{ render_tool_result(msg.content, sanitizer) }}
+
+{% elif msg.type == 'system' %}
+    <div class="message-text" style="font-style: italic; color: #6b7280;">
+        {{ sanitizer.sanitize_text(msg.content) if sanitizer else msg.content }}
+    </div>
+
+{% elif msg.type == 'file-history-snapshot' %}
+    <div class="tool-use" style="background: #e0e7ff; border-left-color: #4f46e5;">
+        <div class="tool-name" style="color: #3730a3;">
+            <span class="tool-icon">📸</span>
+            File History Snapshot
+        </div>
+        <details class="tool-details">
+            <summary>Snapshot Data</summary>
+            <pre style="background: white; padding: 0.75rem; border-radius: 4px; overflow-x: auto; font-size: 0.85rem;">{{ msg.content | tojson(indent=2) }}</pre>
+        </details>
+    </div>
+
+{% else %}
+    <div class="message-text">
+        {{ msg.content | tojson if msg.content is not string else (sanitizer.sanitize_text(msg.content) if sanitizer else msg.content) }}
+    </div>
+{% endif %}
+{% endmacro %}
+
+{% macro render_tool_use(tool, sanitizer, config) %}
+<div class="tool-use">
+    <div class="tool-name">
+        <span class="tool-icon">{{ config.TOOL_DISPLAY_NAMES.get(tool.name, '🔧 ' + tool.name) }}</span>
+    </div>
+
+    <details class="tool-details" open>
+        <summary>Input Parameters</summary>
+        <div class="tool-params">
+            {% if tool.input is mapping %}
+                {% for key, value in tool.input.items() %}
+                    <div style="margin-bottom: 0.5rem;">
+                        <strong style="color: #92400e;">{{ key }}:</strong>
+                        {% if value is string and value|length > 200 %}
+                            <pre style="background: #fef3c7; padding: 0.5rem; border-radius: 4px; margin-top: 0.25rem; overflow-x: auto; font-size: 0.85rem;">{{ sanitizer.sanitize_text(value) if sanitizer else value }}</pre>
+                        {% elif value is string %}
+                            <code style="background: #fef3c7; padding: 0.2rem 0.4rem; border-radius: 3px; font-size: 0.85rem;">{{ sanitizer.sanitize_text(value) if sanitizer else value }}</code>
+                        {% else %}
+                            <pre style="background: #fef3c7; padding: 0.5rem; border-radius: 4px; margin-top: 0.25rem; overflow-x: auto; font-size: 0.85rem;">{{ value | tojson(indent=2) }}</pre>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            {% else %}
+                <pre style="background: white; padding: 0.75rem; border-radius: 4px; overflow-x: auto; font-size: 0.85rem;">{{ tool.input | tojson(indent=2) }}</pre>
+            {% endif %}
+        </div>
+    </details>
+</div>
+{% endmacro %}
+
+{% macro render_tool_result(result, sanitizer) %}
+<div class="tool-result">
+    <div class="tool-result-header">
+        <span>📤</span>
+        Tool Result
+    </div>
+
+    {% if result.content is string %}
+        {% set content = sanitizer.sanitize_text(result.content) if sanitizer else result.content %}
+        {% set lines = content.split('\n') %}
+        {% if lines|length > 20 %}
+            <div class="tool-result-content">{{ lines[:20] | join('\n') }}</div>
+            <button class="show-more-btn" onclick="toggleShowMore(this)">Show All ({{ lines|length }} lines)</button>
+        {% else %}
+            <div class="tool-result-content expanded">{{ content }}</div>
+        {% endif %}
+    {% elif result.content is iterable %}
+        {% for block in result.content %}
+            {% if block.type == 'text' %}
+                {% set content = sanitizer.sanitize_text(block.text) if sanitizer else block.text %}
+                <div class="tool-result-content expanded">{{ content }}</div>
+            {% else %}
+                <div class="tool-result-content expanded">{{ block | tojson(indent=2) }}</div>
+            {% endif %}
+        {% endfor %}
+    {% else %}
+        <div class="tool-result-content expanded">{{ result.content | tojson(indent=2) }}</div>
+    {% endif %}
+</div>
+{% endmacro %}
