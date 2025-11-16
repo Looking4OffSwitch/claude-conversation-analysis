@@ -11,15 +11,15 @@ __pycache__/
 *.pyo
 *.pyd
 .Python
-pip-log.txt
-pip-delete-this-directory.txt
 
-# Virtual Environment
+# Virtual Environment (uv)
 .venv/
 venv/
 ENV/
 env/
 .virtualenv/
+
+# Note: uv.lock should be committed for reproducible builds
 
 # Flask
 instance/
@@ -27,6 +27,10 @@ instance/
 *.db
 *.sqlite
 *.sqlite3
+
+# Flask app runtime directories
+flask_app/cache/
+flask_app/exports/
 
 # Distribution / packaging
 .Python
