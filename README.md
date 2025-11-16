@@ -280,9 +280,6 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Windows
 powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
-
-# Or via pip
-pip install uv
 ```
 
 #### Step 3: Install Dependencies
@@ -302,7 +299,7 @@ uv sync --no-dev
 
 #### Optional Dependencies
 
-- **Gunicorn** - Production WSGI server (install with `uv sync` or `uv pip install gunicorn`)
+- **Gunicorn** - Production WSGI server (installed automatically with `uv sync`)
 
 ### Configuration
 
@@ -383,9 +380,7 @@ python -m flask_app.app
 
 **Method 3: Production Server (Gunicorn)**
 ```bash
-# Install gunicorn (if not already installed via uv sync)
-uv pip install gunicorn
-
+# Gunicorn is installed automatically with 'uv sync'
 # Run with 4 worker processes
 gunicorn -w 4 -b 127.0.0.1:5000 flask_app.app:app
 ```
